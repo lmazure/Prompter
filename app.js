@@ -2,7 +2,9 @@
 // DOM Elements
 const datasetToggle = document.getElementById('dataset-toggle');
 const natureToggle = document.getElementById('nature-toggle');
+const typeToggle = document.getElementById('type-toggle');
 const natureConfigContainer = document.getElementById('nature-config-container');
+const typeConfigContainer = document.getElementById('type-config-container');
 const systemPromptEl = document.getElementById('system-prompt-content');
 const userPromptEl = document.getElementById('user-prompt-content');
 const copySystemBtn = document.getElementById('copy-system');
@@ -19,7 +21,17 @@ const DEFAULT_NATURES = [
   { key: "ATDD", description: "Acceptance criteria driven testing", enabled: true }
 ];
 
-let natures = JSON.parse(JSON.stringify(DEFAULT_NATURES)); // Deep copy to manage state
+const DEFAULT_TYPES = [
+  { key: "compliance", description: "Testing adherence to standards or regulations", enabled: true },
+  { key: "correction", description: "Testing after a bug fix (to be used when the source of the requirement is set to “defect”)", enabled: true },
+  { key: "evolution", description: "Testing of newly added functionalities", enabled: true },
+  { key: "regression", description: "Testing that no existing functionality is broken", enabled: true },
+  { key: "end-to-end", description: "Testing of the complete end-user flow", enabled: true },
+  { key: "partner", description: "Integration testing with an external system", enabled: true }
+];
+
+let natures = JSON.parse(JSON.stringify(DEFAULT_NATURES)); // Deep copy
+let types = JSON.parse(JSON.stringify(DEFAULT_TYPES));     // Deep copy
 
 // Prompt Parts
 const SYSTEM_PROMPT_HEADER = `You are an expert in manual software testing. You are responsible for defining the test cases necessary to validate a specific requirement. These test cases must be written in English. Ensure to include test cases for error scenarios and invalid inputs where relevant.
@@ -30,10 +42,10 @@ You must provide the test cases in JSON format as an array with the following fo
       {
         "name": "test case name",`;
 
-// We will inject "nature": "test case nature", here if enabled
+// We will inject "nature": ... here
+// We will inject "type": ... here
 
 const SYSTEM_PROMPT_JSON_MID = `
-        "type": "test case type",
         "description": "high-level description of the test case",
         "prerequisites": "test case prerequisites",
         "testSteps": [
@@ -55,17 +67,8 @@ const SYSTEM_PROMPT_JSON_MID = `
 A test step can reference another by designating it as "first test step" or "test step 1", "second test step" or "test step 2"...
 `;
 
-// Nature explanation block will be inserted here
-
-const SYSTEM_PROMPT_TYPES = `
-The "type" field must have one of the following values:
-- "compliance": Testing adherence to standards or regulations
-- "correction": Testing after a bug fix (to be used when the source of the requirement is set to “defect”)
-- "evolution": Testing of newly added functionalities
-- "regression": Testing that no existing functionality is broken
-- "end-to-end": Testing of the complete end-user flow
-- "partner": Integration testing with an external system
-`;
+// Nature explanation block 
+// Type explanation block
 
 const SYSTEM_PROMPT_DATASET = `
 It is possible to parameterize actions and expected results using the syntax <parameter name>. In this case, the JSON must contain an additional "dataset" attribute that contains the values to use for the different test instantiations, for example:
@@ -170,51 +173,55 @@ No related documents provided.
 
 // Logic
 
-function renderNatureUI() {
-  natureConfigContainer.innerHTML = '';
-  natures.forEach((nature, index) => {
+function renderListUI(container, dataList, updateFn) {
+  container.innerHTML = '';
+  dataList.forEach((itemData, index) => {
     const item = document.createElement('div');
-    item.className = 'nature-item';
+    item.className = 'nature-item'; // Reusing style class
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.checked = nature.enabled;
+    checkbox.checked = itemData.enabled;
     checkbox.addEventListener('change', (e) => {
-      natures[index].enabled = e.target.checked;
+      dataList[index].enabled = e.target.checked;
       updatePrompts();
-      renderNatureUI(); // Re-render to update input disabled state
+      updateFn(); // Re-render to update input disabled state
     });
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.value = nature.description;
-    input.className = 'nature-input';
-    input.placeholder = `Description for ${nature.key}`;
+    input.value = itemData.description;
+    input.className = 'nature-input'; // Reusing style class
+    input.placeholder = `Description for ${itemData.key}`;
     input.addEventListener('input', (e) => {
-      natures[index].description = e.target.value;
+      dataList[index].description = e.target.value;
       updatePrompts();
     });
 
-    if (!nature.enabled) {
+    if (!itemData.enabled) {
       input.disabled = true;
     }
 
-    // Label for checkbox is implicit by structure, but we can add a tooltip or better UI if needed. 
-    // For now, let's put the key as a label or placeholder.
-    // Actually, let's prepend the key to the input or make it part of the placeholder
-    input.setAttribute('title', nature.key);
-    // Let's add a small label for the key
+    input.setAttribute('title', itemData.key);
     const keyLabel = document.createElement('span');
-    keyLabel.innerText = nature.key;
-    keyLabel.style.minWidth = '100px';
+    keyLabel.innerText = itemData.key;
+    keyLabel.style.minWidth = '100px'; // Could move to CSS
     keyLabel.style.fontSize = '0.9em';
     keyLabel.style.color = 'var(--text-secondary)';
 
     item.appendChild(checkbox);
     item.appendChild(keyLabel);
     item.appendChild(input);
-    natureConfigContainer.appendChild(item);
+    container.appendChild(item);
   });
+}
+
+function renderNatureUI() {
+  renderListUI(natureConfigContainer, natures, renderNatureUI);
+}
+
+function renderTypeUI() {
+  renderListUI(typeConfigContainer, types, renderTypeUI);
 }
 
 function updatePrompts() {
@@ -224,6 +231,10 @@ function updatePrompts() {
   // Inject Nature field in JSON if enabled
   if (natureToggle.checked) {
     systemPrompt += `\n        "nature": "test case nature",`;
+  }
+  // Inject Type field in JSON if enabled
+  if (typeToggle.checked) {
+    systemPrompt += `\n        "type": "test case type",`;
   }
 
   systemPrompt += SYSTEM_PROMPT_JSON_MID;
@@ -237,12 +248,16 @@ function updatePrompts() {
     });
   }
 
-  systemPrompt += SYSTEM_PROMPT_TYPES;
+  // Inject Type Explanation if enabled
+  if (typeToggle.checked) {
+    systemPrompt += `\nThe "type" field must have one of the following values:\n`;
+    const activeTypes = types.filter(t => t.enabled);
+    activeTypes.forEach(t => {
+      systemPrompt += `- "${t.key}": ${t.description}\n`;
+    });
+  }
 
   if (datasetToggle.checked) {
-    // Note: The dataset example also contains "nature": "functional". 
-    // Technically if nature is disabled globally, we might want to remove it from the example too,
-    // but the example is static text. For now, we leave the example as is, assuming it shows a "full" capability.
     systemPrompt += SYSTEM_PROMPT_DATASET;
   }
   systemPrompt += SYSTEM_PROMPT_FOOTER;
@@ -258,6 +273,12 @@ function updatePrompts() {
   } else {
     natureConfigContainer.classList.add('hidden');
   }
+
+  if (typeToggle.checked) {
+    typeConfigContainer.classList.remove('hidden');
+  } else {
+    typeConfigContainer.classList.add('hidden');
+  }
 }
 
 function copyToClipboard(elementId) {
@@ -270,9 +291,11 @@ function copyToClipboard(elementId) {
 // Event Listeners
 datasetToggle.addEventListener('change', updatePrompts);
 natureToggle.addEventListener('change', updatePrompts);
+typeToggle.addEventListener('change', updatePrompts);
 copySystemBtn.addEventListener('click', () => copyToClipboard('system-prompt-content'));
 copyUserBtn.addEventListener('click', () => copyToClipboard('user-prompt-content'));
 
 // Initial Render
 renderNatureUI();
+renderTypeUI();
 updatePrompts();
