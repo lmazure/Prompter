@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SquashTM Prompter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Panel: Configuration -->
+        <aside class="config-panel">
+            <header>
+                <h1>SquashTM Prompter</h1>
+            </header>
+            
+            <div class="config-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="dataset-toggle">
+                    <span class="slider"></span>
+                    <span class="label-text">Allow AI to generate datasets</span>
+                </label>
+            </div>
+
+            <!-- Future controls will go here -->
+        </aside>
+
+        <!-- Right Panel: Prompts Preview -->
+        <main class="preview-panel">
+            <section class="prompt-section system-prompt">
+                <div class="section-header">
+                    <h2>System Prompt</h2>
+                    <button class="copy-btn" id="copy-system">Copy</button>
+                </div>
+                <div class="code-container">
+                    <pre><code id="system-prompt-content"></code></pre>
+                </div>
+            </section>
+
+            <section class="prompt-section user-prompt">
+                <div class="section-header">
+                    <h2>User Prompt</h2>
+                    <button class="copy-btn" id="copy-user">Copy</button>
+                </div>
+                <div class="code-container">
+                    <pre><code id="user-prompt-content"></code></pre>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
