@@ -1,5 +1,6 @@
 
 // DOM Elements
+const referencesToggle = document.getElementById('references-toggle');
 const datasetToggle = document.getElementById('dataset-toggle');
 const natureToggle = document.getElementById('nature-toggle');
 const typeToggle = document.getElementById('type-toggle');
@@ -33,7 +34,7 @@ const DEFAULT_TYPES = [
 let natures = JSON.parse(JSON.stringify(DEFAULT_NATURES)); // Deep copy
 let types = JSON.parse(JSON.stringify(DEFAULT_TYPES));     // Deep copy
 
-// Prompt Parts
+// Prompt Parts - System
 const SYSTEM_PROMPT_HEADER = `You are an expert in manual software testing. You are responsible for defining the test cases necessary to validate a specific requirement. These test cases must be written in English. Ensure to include test cases for error scenarios and invalid inputs where relevant.
 
 You must provide the test cases in JSON format as an array with the following format:
@@ -41,9 +42,6 @@ You must provide the test cases in JSON format as an array with the following fo
     "testCases": [
       {
         "name": "test case name",`;
-
-// We will inject "nature": ... here
-// We will inject "type": ... here
 
 const SYSTEM_PROMPT_JSON_MID = `
         "description": "high-level description of the test case",
@@ -66,9 +64,6 @@ const SYSTEM_PROMPT_JSON_MID = `
 
 A test step can reference another by designating it as "first test step" or "test step 1", "second test step" or "test step 2"...
 `;
-
-// Nature explanation block 
-// Type explanation block
 
 const SYSTEM_PROMPT_DATASET = `
 It is possible to parameterize actions and expected results using the syntax <parameter name>. In this case, the JSON must contain an additional "dataset" attribute that contains the values to use for the different test instantiations, for example:
@@ -129,14 +124,19 @@ It is possible to parameterize actions and expected results using the syntax <pa
 const SYSTEM_PROMPT_FOOTER = `
 Your response must contain nothing other than JSON! Do not use Markdown code blocks.`;
 
-const USER_PROMPT_TEMPLATE = `## Requirement to be tested
+// Prompt Parts - User
+const USER_PROMPT_HEADER = `## Requirement to be tested
 
 {{#with requirement}}
 The requirement is: "{{ name }}"
 
 {{ description }}
+`;
 
-Reference: {{reference}}
+const USER_PROMPT_REF_LINE = `
+Reference: {{reference}}`;
+
+const USER_PROMPT_BODY = `
 Category: {{ category }}
 Nature: {{ nature }}
 {{/with}}
@@ -151,8 +151,11 @@ In order to understand the context of that requirement, you need to consider:
 - {{ inc @index }} - "{{ name }}"
 
 {{description}}
+`;
 
-Reference: {{reference}}
+// Reuse REF_LINE for the related part as well
+
+const USER_PROMPT_RELATED_END = `
 Category: {{ category }}
 Nature: {{ nature }}
 
@@ -170,6 +173,7 @@ No related requirements provided.
 No related documents provided.
 {{/if}}
 `;
+
 
 // Logic
 
@@ -205,7 +209,7 @@ function renderListUI(container, dataList, updateFn) {
     input.setAttribute('title', itemData.key);
     const keyLabel = document.createElement('span');
     keyLabel.innerText = itemData.key;
-    keyLabel.style.minWidth = '100px'; // Could move to CSS
+    keyLabel.style.minWidth = '100px';
     keyLabel.style.fontSize = '0.9em';
     keyLabel.style.color = 'var(--text-secondary)';
 
@@ -225,7 +229,7 @@ function renderTypeUI() {
 }
 
 function updatePrompts() {
-  // 1. Build System Prompt
+  // --- 1. Build System Prompt ---
   let systemPrompt = SYSTEM_PROMPT_HEADER;
 
   // Inject Nature field in JSON if enabled
@@ -264,10 +268,26 @@ function updatePrompts() {
 
   systemPromptEl.innerText = systemPrompt.trim();
 
-  // 2. Build User Prompt (Static for now)
-  userPromptEl.innerText = USER_PROMPT_TEMPLATE.trim();
 
-  // UI Updates
+  // --- 2. Build User Prompt ---
+  let userPrompt = USER_PROMPT_HEADER;
+
+  if (referencesToggle.checked) {
+    userPrompt += USER_PROMPT_REF_LINE;
+  }
+
+  userPrompt += USER_PROMPT_BODY;
+
+  if (referencesToggle.checked) {
+    userPrompt += USER_PROMPT_REF_LINE;
+  }
+
+  userPrompt += USER_PROMPT_RELATED_END;
+
+  userPromptEl.innerText = userPrompt.trim();
+
+
+  // --- 3. UI Updates ---
   if (natureToggle.checked) {
     natureConfigContainer.classList.remove('hidden');
   } else {
@@ -289,6 +309,7 @@ function copyToClipboard(elementId) {
 }
 
 // Event Listeners
+referencesToggle.addEventListener('change', updatePrompts);
 datasetToggle.addEventListener('change', updatePrompts);
 natureToggle.addEventListener('change', updatePrompts);
 typeToggle.addEventListener('change', updatePrompts);
