@@ -100,7 +100,6 @@ It is possible to parameterize actions and expected results using the syntax <pa
         "prerequisites": "",
         "testSteps": [
           {
-            "index": 0,
             "action": "enter values <arg1> and <arg2>, then click on Subtract",
             "expectedResult": "the displayed total must be <total>"
           }
