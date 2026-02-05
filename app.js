@@ -152,12 +152,11 @@ The requirement is: "{{ name }}"
 const USER_PROMPT_REF_LINE = `
 Reference: {{reference}}`;
 
-const USER_PROMPT_BODY = `
-Category: {{ category }}
-Nature: {{ nature }}
+const USER_PROMPT_BODY_SUFFIX = `
 {{/with}}
 
 ## Additional information
+
 
 In order to understand the context of that requirement, you need to consider:
 
@@ -171,10 +170,7 @@ In order to understand the context of that requirement, you need to consider:
 
 // Reuse REF_LINE for the related part as well
 
-const USER_PROMPT_RELATED_END = `
-Category: {{ category }}
-Nature: {{ nature }}
-
+const USER_PROMPT_RELATED_SUFFIX = `
 {{/each}}
 {{else}}
 No related requirements provided.
@@ -298,13 +294,31 @@ function updatePrompts() {
     userPrompt += USER_PROMPT_REF_LINE;
   }
 
-  userPrompt += USER_PROMPT_BODY;
+  // Inject Category/Nature for Main Requirement
+  if (categoryToggle.checked) {
+    userPrompt += `\nCategory: {{ category }}`;
+  }
+  if (natureToggle.checked) {
+    userPrompt += `\nNature: {{ nature }}`;
+  }
+  userPrompt += '\n'; // Add newline before closing body
+
+  userPrompt += USER_PROMPT_BODY_SUFFIX;
 
   if (referencesToggle.checked) {
     userPrompt += USER_PROMPT_REF_LINE;
   }
 
-  userPrompt += USER_PROMPT_RELATED_END;
+  // Inject Category/Nature for Related Requirements
+  if (categoryToggle.checked) {
+    userPrompt += `\nCategory: {{ category }}`;
+  }
+  if (natureToggle.checked) {
+    userPrompt += `\nNature: {{ nature }}`;
+  }
+  userPrompt += '\n'; // Add newline
+
+  userPrompt += USER_PROMPT_RELATED_SUFFIX;
 
   // Inject Category Explanation if enabled
   if (categoryToggle.checked) {
