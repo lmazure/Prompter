@@ -171,6 +171,21 @@ No related requirements provided.
 {{else}}
 No related documents provided.
 {{/if}}
+
+## Definition of the requirement categories
+
+The "category" field can have one of the following values:
+- "Functional": Requirements related to system functionalities and features
+- "Non-functional": Requirements related to system qualities and constraints
+- "Use case": Requirements describing user interactions and scenarios
+- "Business": Requirements driven by business rules and objectives
+- "Test requirement": Requirements specifically defining testing needs
+- "Ergonomic": Requirements related to user experience and usability
+- "Performance": Requirements concerning response time and system capacity
+- "Technical": Requirements addressing technical implementation and architecture
+- "User story": Requirements expressed as user-focused narratives
+- "Security": Requirements for protection against vulnerabilities and unauthorized access
+- "Undefined": Requirements without a defined category (default)
 `;
 
 
